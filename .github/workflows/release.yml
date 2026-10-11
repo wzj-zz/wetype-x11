@@ -1,0 +1,46 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: 安装构建依赖
+        run: sudo apt-get update && sudo apt-get install -y gcc make curl
+
+      - name: 缓存静态 libopus
+        uses: actions/cache@v4
+        with:
+          path: vendor/opus
+          key: opus-1.5.2-${{ runner.os }}-${{ runner.arch }}
+
+      - name: 构建
+        run: ./build.sh
+
+      - name: 校验产物
+        run: |
+          file wetype-x11 | grep -q "statically linked"
+          ./wetype-x11 --check || true
+          sha256sum wetype-x11 > wetype-x11.sha256
+          cat wetype-x11.sha256
+
+      - name: 发布到 Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" wetype-x11 wetype-x11.sha256 \
+            --title "${GITHUB_REF_NAME}" --generate-notes

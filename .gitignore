@@ -1,0 +1,9 @@
+# 构建产物
+/wetype-x11
+
+# vendor 中自动下载/编译的部分(build.sh 会重新生成)
+/vendor/opus/
+/vendor/opus-src/
+/vendor/opus.tar.gz
+
+# Python 版缓存
