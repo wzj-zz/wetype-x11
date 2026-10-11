@@ -15,7 +15,6 @@ Go 单文件源码, 静态编译为**零动态依赖**的单文件二进制(`./b
 - `xdotool`(上屏,X11/XWayland)
 - `xclip` 或 `xsel`(上屏,剪贴板方案;两者操作同一 X11 CLIPBOARD 选区,自动探测)
 - `pactl`(可选,麦克风源锁定与录音期间静音)
-- `notify-send`(可选,桌面通知)
 
 ```bash
 ./wetype-x11 --check       # 依赖检查
@@ -57,7 +56,7 @@ remote=$(curl -sfL --max-time 15 "$base/wetype-x11.sha256" | cut -d' ' -f1) || e
 [ -f "$bin" ] && [ "$(sha256sum "$bin" | cut -d' ' -f1)" = "$remote" ] && exit 0
 curl -sfL --max-time 120 "$base/wetype-x11" -o "$bin.new" || { rm -f "$bin.new"; exit 1; }
 echo "$remote  $bin.new" | sha256sum -c - >/dev/null 2>&1 || { rm -f "$bin.new"; exit 1; }
-chmod +x "$bin.new" && mv "$bin.new" "$bin" && notify-send "wetype-x11 已更新"
+chmod +x "$bin.new" && mv "$bin.new" "$bin" && notify-send "wetype-x11 已更新" 2>/dev/null || true
 ```
 
 网络失败时静默退出, 不影响开机。可挂在任意自启动位置(ahk_x11 自启动段 / systemd user service / cron @reboot)。

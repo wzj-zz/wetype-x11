@@ -6,7 +6,7 @@
 //     ctrl + alt + z  →  /path/to/wetype-x11
 //     ctrl + alt + x  →  /path/to/wetype-x11 --cancel
 //
-// 运行期依赖: pw-record|parec|arecord(任一) + xdotool + notify-send(可选)
+// 运行期依赖: pw-record|parec|arecord(任一) + xdotool
 // 构建: 见 build.sh (静态链接 libopus, 产物零动态依赖)
 //
 // WeType 协议移植自 wetype-x11.py (源自 xifan2333/vinput-registry
@@ -1032,12 +1032,6 @@ func logMsg(msg string) {
 	fmt.Fprintf(f, "[%s] %s\n", time.Now().Format("2006-01-02 15:04:05"), msg)
 }
 
-func notify(title, body, urgency string) {
-	if path, err := exec.LookPath("notify-send"); err == nil {
-		exec.Command(path, "-u", urgency, "-a", "wetype-x11", title, body).Run()
-	}
-}
-
 // defaultMicSource 返回默认录音源(麦克风)名称, 绝不返回 monitor(系统声音)源
 func defaultMicSource() string {
 	p, err := exec.LookPath("pactl")
@@ -1245,7 +1239,7 @@ func runSession() int {
 
 	recorder := pickRecorder()
 	if recorder == nil {
-		notify("❌ WeType 出错", "找不到录音命令 (pw-record/parec/arecord)", "critical")
+		logMsg("error: 找不到录音命令 (pw-record/parec/arecord)")
 		return 1
 	}
 	cmd := exec.Command(recorder[0], recorder[1:]...)
@@ -1256,7 +1250,7 @@ func runSession() int {
 		return 1
 	}
 	if err := cmd.Start(); err != nil {
-		notify("❌ WeType 出错", "录音命令启动失败: "+err.Error(), "critical")
+		logMsg("error: 录音命令启动失败: " + err.Error())
 		return 1
 	}
 	muteSink()
@@ -1285,23 +1279,20 @@ func runSession() int {
 	client, err := NewClient()
 	if err != nil {
 		killRecorder()
-		notify("❌ WeType 出错", err.Error(), "critical")
 		logMsg("error: " + err.Error())
 		return 1
 	}
 	defer client.ws.abort()
 
-	notify("🎙 录音中", "再按一次快捷键结束并上屏", "normal")
 	if err := client.Handshake(); err != nil {
 		killRecorder()
-		notify("❌ WeType 握手失败", err.Error(), "critical")
 		logMsg("error: handshake: " + err.Error())
 		return 1
 	}
 	encoder, err := NewOpusEncoder()
 	if err != nil {
 		killRecorder()
-		notify("❌ WeType 出错", err.Error(), "critical")
+		logMsg("error: " + err.Error())
 		return 1
 	}
 	defer encoder.Close()
@@ -1404,7 +1395,7 @@ drained:
 	}
 
 	if cancel {
-		notify("已取消", "本次录音未上屏", "normal")
+		logMsg("cancelled")
 		return 0
 	}
 
@@ -1423,15 +1414,13 @@ drained:
 		}
 	}
 	if seq == 0 && len(packets) == 0 {
-		notify("未录到声音", "", "low")
+		logMsg("warn: 未录到声音")
 		return 0
 	}
 
-	notify("⏳ 识别定稿中…", "", "normal")
 	if err := send(true, false); err != nil {
 		// 定稿上传失败但已有临时文本时, 保留最新文本
 		if text == "" {
-			notify("❌ WeType 出错", err.Error(), "critical")
 			logMsg("error: " + err.Error())
 			return 1
 		}
@@ -1455,18 +1444,12 @@ drained:
 	}
 	if result != "" {
 		if err := typeText(result); err != nil {
-			notify("❌ 上屏失败", err.Error(), "critical")
 			logMsg("error: type: " + err.Error())
 			return 1
 		}
 		logMsg("final: " + result)
-		preview := []rune(result)
-		if len(preview) > 80 {
-			preview = preview[:80]
-		}
-		notify("✅ 已上屏", string(preview), "normal")
 	} else {
-		notify("未识别到内容", "", "low")
+		logMsg("warn: 未识别到内容")
 	}
 	return 0
 }
@@ -1549,7 +1532,7 @@ func check() int {
 		fmt.Println("录音命令: 未找到 pw-record/parec/arecord")
 		ok = false
 	}
-	for _, name := range []string{"xdotool", "xprop", "notify-send"} {
+	for _, name := range []string{"xdotool", "xprop"} {
 		if p, err := exec.LookPath(name); err == nil {
 			fmt.Printf("%s: %s\n", name, p)
 		} else {
