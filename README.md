@@ -35,7 +35,7 @@ Go 单文件源码, 静态编译为**零动态依赖**的单文件二进制(`./b
 
 ```ahk
 #e::  ; 开始/结束录音并上屏
-Run, env WETYPE_X11_MUTE=1 /path/to/wetype-x11
+Run, /path/to/wetype-x11
 return
 ```
 
@@ -64,7 +64,7 @@ chmod +x "$bin.new" && mv "$bin.new" "$bin" && notify-send "wetype-x11 已更新
 ## 说明
 
 - 录音源锁定为默认麦克风, 不会录到 monitor(系统声音)
-- `WETYPE_X11_MUTE=1`(ahk 绑定中已开启): 录音期间临时静音系统输出, 防止外放声音被麦克风物理收录; 录音结束立即恢复, 且只恢复由本程序静音的状态
+- `WETYPE_X11_MUTE=0`: 关闭录音期间的临时静音(默认开启, 防止外放声音被麦克风物理收录; 录音结束立即恢复, 且只恢复由本程序静音的状态)
 - 上屏: 全部走剪贴板粘贴(保存→写入→模拟粘贴键→恢复旧剪贴板, 不丢字): 普通窗口 Ctrl+V, 终端窗口(按 WM_CLASS 精确识别) Ctrl+Shift+V; 无 xclip 时回退 xdotool 模拟按键。`WETYPE_X11_TYPE=type` 可强制只用模拟按键; `--wclass` 可查看当前窗口的判定结果
 - 设备身份缓存于 `~/.cache/wetype-x11/identity.json`(0600),首次运行自动注册
 - 日志: `~/.cache/wetype-x11/wetype-x11.log`

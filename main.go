@@ -1195,12 +1195,12 @@ func pasteClipboard(text, keys string) error {
 	return nil
 }
 
-// WETYPE_X11_MUTE=1 时, 录音期间临时静音系统输出(防止外放声音被麦克风收录)
+// 录音期间默认临时静音系统输出(防止外放声音被麦克风收录); WETYPE_X11_MUTE=0 关闭
 
 var sinkMutedByUs bool
 
 func muteSink() {
-	if os.Getenv("WETYPE_X11_MUTE") != "1" {
+	if os.Getenv("WETYPE_X11_MUTE") == "0" {
 		return
 	}
 	p, err := exec.LookPath("pactl")
